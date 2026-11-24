@@ -1,0 +1,2 @@
+# Commit-scoped false positive in historical license prose; no value is a credential.
+9a1a366ab165d3189ca62f383bf3d01fa0b0bf43:docs/README.md:generic-api-key:11

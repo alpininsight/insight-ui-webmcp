@@ -1,0 +1,104 @@
+name: WebMCP release
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Create the reviewed Main GitHub release after source checks
+        type: boolean
+        default: false
+      release_kind:
+        description: Choose a stable release or a GitHub prerelease
+        type: choice
+        options: [stable, rc]
+        default: stable
+      rc_number:
+        description: Positive release candidate number
+        type: string
+        default: '1'
+permissions:
+  contents: read
+concurrency:
+  group: webmcp-release
+  cancel-in-progress: false
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Require main before reading source
+        env:
+          SOURCE_REF: ${{ github.ref }}
+        run: test "$SOURCE_REF" = refs/heads/main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: '3.14'
+          enable-cache: false
+      - name: Require exact main CI and the merged promotion before activation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          RELEASE_REQUESTED: ${{ inputs.release }}
+          ENABLED: ${{ vars.WEBMCP_PYPI_PUBLISH_ENABLED }}
+        run: |
+          set --
+          if [ "$RELEASE_REQUESTED" = true ]; then
+            test "$ENABLED" = true
+            set -- --require-merged-pr
+          fi
+          uv run --no-project --python 3.14 python scripts/check_publication.py source \
+            --repository "$SOURCE_REPOSITORY" --sha "$SOURCE_SHA" "$@"
+
+  version:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      major_minor_patch: ${{ steps.gitversion.outputs.MajorMinorPatch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        with:
+          dotnet-version: 10.0.x
+      - uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        with:
+          versionSpec: 6.8.x
+      - id: gitversion
+        uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
+        env:
+          Git_Branch: ${{ github.ref_name }}
+        with:
+          configFilePath: GitVersion.yml
+          disableNormalization: true
+          overrideConfig: update-build-number=false
+
+  release:
+    needs: [source, version]
+    permissions:
+      contents: write
+    uses: alpininsight/.github/.github/workflows/create-release.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    with:
+      release_kind: ${{ inputs.release_kind }}
+      rc_number: ${{ inputs.rc_number }}
+      target_version: ${{ needs.version.outputs.major_minor_patch }}
+      checkout_ref: ${{ github.sha }}
+      create: ${{ inputs.release }}
+      require_main: true
+      contract_revision: 7152544c2f591ed277e17894db9ad11f551b3069
+      contract_sha256: 965f1bbf6a488b332462b71b462393510ce0b5cbea3470bc28de050acbea780a
+      release_sha256: a185829727f9f09fedf11aff3641106e1917beaf397944bee9b3abb3eafc56b4

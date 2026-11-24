@@ -1,0 +1,157 @@
+name: CI
+run-name: ${{ github.event_name == 'pull_request' && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'CI metadata' || 'CI full' }}
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: webmcp-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'metadata' || 'full' }}
+  cancel-in-progress: true
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          BASE_CHANGED: ${{ github.event.changes.base != null }}
+        run: |
+          mode=full
+          if [ "$EVENT_NAME" = pull_request ] && [ "$BASE_CHANGED" = false ]; then
+            case "$ACTION" in
+              edited|ready_for_review) mode=metadata ;;
+            esac
+          fi
+          printf 'mode=%s\n' "$mode" >> "$GITHUB_OUTPUT"
+
+  repository-policy:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: alpininsight/.github/.github/workflows/repository-policy.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    with:
+      main_branch: main
+      develop_branch: develop
+      policy_revision: 7152544c2f591ed277e17894db9ad11f551b3069
+      policy_sha256: e172ee9657581c2e47b3940f291d7aa00769bcb59cca8db8d75b168f49835d09
+
+  quality:
+    needs: classify
+    if: needs.classify.outputs.mode == 'full'
+    uses: alpininsight/.github/.github/workflows/python-quality.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    with:
+      python_versions: '["3.12", "3.13", "3.14"]'
+      uv_sync_args: --locked --all-groups
+      quality_node_version: '24'
+      lint_command: uv run --locked ruff check src tests scripts
+      format_command: uv run --locked ruff format --check src tests scripts
+      django_check_command: uv run --locked python -m django check --settings=tests.settings
+      test_command: uv lock --check && uv run --locked pytest
+
+  compatibility:
+    name: Minimum supported Django
+    needs: classify
+    if: needs.classify.outputs.mode == 'full'
+    uses: alpininsight/.github/.github/workflows/python-quality.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    with:
+      python_versions: '["3.12"]'
+      uv_sync_args: --locked --all-groups
+      quality_node_version: '24'
+      run_pre_commit: false
+      run_gitleaks: false
+      lint_command: ''
+      format_command: ''
+      test_command: >-
+        uv pip install django==6.0.4 && uv pip check &&
+        uv run --no-sync python -m django check --settings=tests.settings &&
+        uv run --no-sync pytest --ignore=tests/test_distribution.py
+
+  ui-compatibility:
+    name: Insight UI interoperability
+    needs: classify
+    if: needs.classify.outputs.mode == 'full'
+    uses: alpininsight/.github/.github/workflows/python-quality.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    with:
+      python_versions: '["3.12"]'
+      uv_sync_args: --locked --all-groups
+      quality_node_version: '24'
+      run_pre_commit: false
+      run_gitleaks: false
+      lint_command: ''
+      format_command: ''
+      test_command: >-
+        uv pip install 'django==6.0.4' 'insight-ui==1.15.1' && uv pip check &&
+        WEBMCP_REQUIRE_INSIGHT_UI=1 WEBMCP_EXPECT_INSIGHT_UI_VERSION=1.15.1
+        uv run --no-sync pytest tests/test_insight_ui_integration.py &&
+        uv pip install 'django==6.0.4' 'insight-ui==2.0.0rc1' 'ais-webmcp==0.2.1' &&
+        uv pip check && WEBMCP_REQUIRE_INSIGHT_UI=1
+        WEBMCP_EXPECT_INSIGHT_UI_VERSION=2.0.0rc1
+        uv run --no-sync pytest tests/test_insight_ui_integration.py
+
+  gate:
+    name: WebMCP Quality Gate
+    needs: [classify, repository-policy, quality, compatibility, ui-compatibility]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: needs.classify.outputs.mode == 'metadata'
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          path: base
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        if: needs.classify.outputs.mode == 'metadata'
+        with:
+          python-version: '3.14'
+          enable-cache: false
+      - name: Verify the latest full PR CI evidence
+        id: evidence
+        if: needs.classify.outputs.mode == 'metadata'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_REPOSITORY: ${{ github.repository }}
+          CI_PR: ${{ github.event.pull_request.number }}
+          CI_HEAD: ${{ github.event.pull_request.head.sha }}
+          CI_BASE: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CI_GATE: WebMCP Quality Gate
+          CI_CONTRACTS: '["quality / Quality (3.12)", "quality / Quality (3.13)", "quality / Quality (3.14)", "quality / Quality Gate", "quality / Gitleaks", "Minimum supported Django / Quality (3.12)", "Minimum supported Django / Quality Gate", "Insight UI interoperability / Quality (3.12)", "Insight UI interoperability / Quality Gate"]'
+        run: |
+          uv run --no-project --python 3.14 python base/scripts/check_ci_evidence.py \
+            --repository "$CI_REPOSITORY" --pr "$CI_PR" --head "$CI_HEAD" \
+            --base "$CI_BASE" --base-ref "$CI_BASE_REF" --gate "$CI_GATE" \
+            --contracts "$CI_CONTRACTS" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Require the contracts for this event
+        env:
+          MODE: ${{ needs.classify.outputs.mode }}
+          CLASSIFY_RESULT: ${{ needs.classify.result }}
+          EVIDENCE_RESULT: ${{ steps.evidence.outcome }}
+          EXPECTED_CONTRACTS: '3'
+          CONTRACT_RESULTS: ${{ needs.quality.result }} ${{ needs.compatibility.result }} ${{ needs.ui-compatibility.result }}
+        run: |
+          test "$CLASSIFY_RESULT" = success
+          read -r -a results <<< "$CONTRACT_RESULTS"
+          test "${#results[@]}" -eq "$EXPECTED_CONTRACTS"
+          if [ "$MODE" = metadata ]; then
+            test "$EVIDENCE_RESULT" = success
+            for result in "${results[@]}"; do test "$result" = skipped; done
+          else
+            test "$MODE" = full
+            for result in "${results[@]}"; do test "$result" = success; done
+          fi

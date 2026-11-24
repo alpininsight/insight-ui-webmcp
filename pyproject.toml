@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling>=1.27.0", "hatch-vcs>=0.5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "insight-ui-webmcp"
+dynamic = ["version"]
+description = "Bring agent-ready website capabilities to Insight UI with WebMCP"
+readme = "README.md"
+requires-python = ">=3.12"
+# PEP 639: a short License-Expression on PyPI instead of the full text.
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [
+  { name = "Alpin Insight Solutions GmbH & Co. KG" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: Django",
+  # django>=6.0.4,<7. Django 5.2 is outside that range, so it is not declared.
+  # No py.typed marker and no Typing :: Typed: public modules re-export
+  # ais-webmcp with star imports and are not a typed API.
+  "Framework :: Django :: 6.0",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "django>=6.0.4,<7",
+  "ais-webmcp>=0.1.0,<0.3",
+]
+
+[project.optional-dependencies]
+ui = [
+    "insight-ui>=1.15.0,<3",
+]
+
+[project.urls]
+# Keep package metadata limited to the currently public destinations.
+Homepage = "https://insight-ui-webmcp.alpininsight.ai/"
+Documentation = "https://insight-ui-webmcp.alpininsight.ai/"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+fallback_version = "0.1.0.dev0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/insight_ui_webmcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/pyproject.toml", "/README.md", "/LICENSE", "/NOTICE"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--no-showlocals"]
+markers = ["unit: isolated unit tests", "integration: Django and distribution tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+exclude = [".git", ".venv", "build", "dist", "output"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "packaging>=26.3,<27",
+    "pre-commit>=4.5,<5",
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff==0.16.10",
+]
