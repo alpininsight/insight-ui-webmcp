@@ -2,6 +2,7 @@
 workflow: GitFlow/v1
 mode: ContinuousDelivery
 tag-prefix: '[vV]?'
+# Preserve the release floor when starting a history without the original tags.
 next-version: 0.3.0
 commit-message-incrementing: Enabled
 major-version-bump-message: '^(feat|fix|refactor|perf|build|chore|ci|docs|style|test)(\(.+\))?!:|BREAKING CHANGE:'
