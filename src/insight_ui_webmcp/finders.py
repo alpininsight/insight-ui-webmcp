@@ -17,6 +17,7 @@ class CoreRuntimeFinder(BaseFinder):
         self.storage.prefix = "insight_ui_webmcp/js"
 
     def find(self, path, find_all=False, **kwargs):
+        path = path.replace("\\", "/")
         matches = []
         if path == STATIC_PATH and self.storage.exists("register.js"):
             matches.append(self.storage.path("register.js"))

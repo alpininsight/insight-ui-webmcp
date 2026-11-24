@@ -35,6 +35,17 @@ def test_finder_exposes_only_the_runtime(path):
     assert finder.find(path, find_all=True) == []
 
 
+def test_finder_matches_windows_path_separators():
+    # StaticFilesHandler.url2pathname() on Windows passes backslashes into find().
+    finder = CoreRuntimeFinder()
+    core = str(files("ais_webmcp").joinpath("assets/register.js"))
+    windows_path = "insight_ui_webmcp\\js\\register.js"
+    assert finder.find(windows_path) == core
+    assert finder.find(windows_path, find_all=True) == [core]
+    assert finder.find("insight_ui_webmcp\\js\\other.js") == []
+    assert finder.find("insight_ui_webmcp\\js\\other.js", find_all=True) == []
+
+
 def test_finder_honors_ignore_patterns():
     assert list(CoreRuntimeFinder().list(["*.js"])) == []
     assert list(CoreRuntimeFinder().list([STATIC_PATH])) == []
