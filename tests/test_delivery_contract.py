@@ -17,6 +17,7 @@ spec.loader.exec_module(publication)
 
 
 PUBLIC_REVISION = "7152544c2f591ed277e17894db9ad11f551b3069"
+PUBLIC_POLICY_REVISION = "86d0d1798b1aa0c6ced5362470ad14eb0301aae9"
 
 
 def _validate_contributor_workflow(workflow):
@@ -26,11 +27,10 @@ def _validate_contributor_workflow(workflow):
         assert "environment" not in job
         assert "secrets" not in job
         if "uses" in job:
-            assert re.fullmatch(
-                r"alpininsight/\.github/\.github/workflows/(python-quality|repository-policy)\.yml@"
-                + PUBLIC_REVISION,
-                job["uses"],
-            )
+            assert job["uses"] in {
+                f"alpininsight/.github/.github/workflows/python-quality.yml@{PUBLIC_REVISION}",
+                f"alpininsight/.github/.github/workflows/repository-policy.yml@{PUBLIC_POLICY_REVISION}",
+            }
             assert "runs-on" not in job and "steps" not in job
         else:
             assert job["runs-on"] == "ubuntu-latest"
@@ -100,11 +100,11 @@ def test_contributor_ci_delegates_only_to_the_pinned_public_catalog():
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     _scan_contributor_directory(ROOT / ".github/workflows")
     policy = workflow["jobs"]["repository-policy"]
-    assert policy["uses"].endswith("repository-policy.yml@" + PUBLIC_REVISION)
-    assert policy["with"]["policy_revision"] == PUBLIC_REVISION
+    assert policy["uses"].endswith("repository-policy.yml@" + PUBLIC_POLICY_REVISION)
+    assert policy["with"]["policy_revision"] == PUBLIC_POLICY_REVISION
     assert (
         policy["with"]["policy_sha256"]
-        == "e172ee9657581c2e47b3940f291d7aa00769bcb59cca8db8d75b168f49835d09"
+        == "fddb3374432d7f8c9b040d6d7410fa906c92a536729b7edb7f30873f395112cb"
     )
     assert policy["if"] == "github.event_name == 'pull_request'"
     assert "repository-policy" in workflow["jobs"]["gate"]["needs"]
