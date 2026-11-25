@@ -19,6 +19,11 @@ Insight UI 1.15.1 and the published 2.0.0rc1, with the RC also using
 The public quality reusable owns these common steps; this repository owns its
 package-specific commands and evidence contract.
 
+Open pull requests against `develop`. Contributors can push their changes to
+a feature branch in a public fork and open the pull request from that branch.
+If GitHub queues a first-time contributor's workflow for approval, a maintainer
+reviews the diff before starting CI.
+
 PR opening, new commits, reopening and base retargeting run full CI. Main pushes
 also run full CI. Develop pushes do not duplicate the tested PR matrix.
 Title/body edits and Ready events use a separate concurrency group and revalidate
