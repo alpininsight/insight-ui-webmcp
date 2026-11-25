@@ -178,7 +178,7 @@ _CF_EDGE_RETIRED: tuple[re.Pattern[str], ...] = (
 def test_readme_cloudflare_edge_is_complement_only() -> None:
     text = (_ROOT / "README.md").read_text(encoding="utf-8")
     assert f"{_DOCS_SITE}/docs/guide/agents-and-edge/" in text
-    assert "does not replace it" in text
+    assert "Browser tool registration stays at the origin." in text
     offenders = [
         f"{line_no}: {match.group(0)}"
         for line_no, line in enumerate(text.splitlines(), start=1)
