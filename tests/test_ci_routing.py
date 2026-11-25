@@ -11,7 +11,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
 METADATA = (
-    "github.event_name == 'pull_request' && !github.event.changes.base && "
+    "github.event_name == 'pull_request' && "
+    "github.event.pull_request.head.repo.full_name == github.repository && !github.event.changes.base && "
     "(github.event.action == 'edited' || github.event.action == 'ready_for_review')"
 )
 
@@ -34,6 +35,7 @@ def test_events_and_concurrency_preserve_main_and_isolate_metadata():
         "EVENT_NAME": "${{ github.event_name }}",
         "ACTION": "${{ github.event.action }}",
         "BASE_CHANGED": "${{ github.event.changes.base != null }}",
+        "SAME_REPOSITORY": "${{ github.event.pull_request.head.repo.full_name == github.repository }}",
     }
     assert not any("uses" in step for step in classify["steps"])
     policy = WORKFLOW["jobs"]["repository-policy"]
@@ -42,22 +44,25 @@ def test_events_and_concurrency_preserve_main_and_isolate_metadata():
 
 
 @pytest.mark.parametrize(
-    "event,action,base_changed,expected",
+    "event,action,base_changed,same_repository,expected",
     [
-        ("pull_request", "opened", "false", "full"),
-        ("pull_request", "synchronize", "false", "full"),
-        ("pull_request", "reopened", "false", "full"),
-        ("pull_request", "edited", "true", "full"),
-        ("pull_request", "edited", "false", "metadata"),
-        ("pull_request", "ready_for_review", "false", "metadata"),
-        ("pull_request", "ready_for_review", "true", "full"),
-        ("push", "", "false", "full"),
-        ("workflow_dispatch", "", "false", "full"),
-        ("workflow_call", "", "false", "full"),
+        ("pull_request", "opened", "false", "true", "full"),
+        ("pull_request", "synchronize", "false", "true", "full"),
+        ("pull_request", "reopened", "false", "true", "full"),
+        ("pull_request", "edited", "true", "true", "full"),
+        ("pull_request", "edited", "false", "true", "metadata"),
+        ("pull_request", "ready_for_review", "false", "true", "metadata"),
+        ("pull_request", "ready_for_review", "true", "true", "full"),
+        ("pull_request", "opened", "false", "false", "full"),
+        ("pull_request", "edited", "false", "false", "full"),
+        ("pull_request", "ready_for_review", "false", "false", "full"),
+        ("push", "", "false", "false", "full"),
+        ("workflow_dispatch", "", "false", "false", "full"),
+        ("workflow_call", "", "false", "false", "full"),
     ],
 )
 def test_execute_routing_for_code_metadata_and_base_retarget(
-    tmp_path, event, action, base_changed, expected
+    tmp_path, event, action, base_changed, same_repository, expected
 ):
     output = tmp_path / "output"
     step = WORKFLOW["jobs"]["classify"]["steps"][0]
@@ -68,6 +73,7 @@ def test_execute_routing_for_code_metadata_and_base_retarget(
             "EVENT_NAME": event,
             "ACTION": action,
             "BASE_CHANGED": base_changed,
+            "SAME_REPOSITORY": same_repository,
             "GITHUB_OUTPUT": str(output),
         },
         check=True,
@@ -175,13 +181,14 @@ def test_metadata_gate_cannot_pass_without_verified_evidence(outcome):
 
 def test_repository_policy_delegates_to_the_exact_public_contract():
     policy = WORKFLOW["jobs"]["repository-policy"]
-    revision = "7152544c2f591ed277e17894db9ad11f551b3069"
+    revision = "86d0d1798b1aa0c6ced5362470ad14eb0301aae9"
     assert (
         policy["uses"] == "alpininsight/.github/.github/workflows/repository-policy.yml@" + revision
     )
     assert policy["with"]["policy_revision"] == revision
     assert policy["with"]["main_branch"] == "main"
     assert policy["with"]["develop_branch"] == "develop"
+    assert policy["with"]["allow_develop_fork_prs"] is True
     # Actual route/title/commit execution belongs to the catalog's independently tested script.
     assert "steps" not in policy
 
