@@ -16,15 +16,21 @@ from packaging.version import Version
 ROOT = Path(__file__).resolve().parents[1]
 
 _DOCS = "https://insight-ui-webmcp.alpininsight.ai/"
+_SOURCE = "https://github.com/alpininsight/insight-ui-webmcp"
 
 
 def _project() -> dict:
     return tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
 
-def test_project_urls_only_advertise_the_current_public_site() -> None:
+def test_project_urls_advertise_the_public_site_source_and_issue_tracker() -> None:
     urls = _project()["urls"]
-    assert urls == {"Homepage": _DOCS, "Documentation": _DOCS}
+    assert urls == {
+        "Homepage": _DOCS,
+        "Documentation": _DOCS,
+        "Source": _SOURCE,
+        "Issues": f"{_SOURCE}/issues",
+    }
 
 
 def test_license_and_django_classifiers() -> None:

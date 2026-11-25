@@ -40,6 +40,8 @@ ui = [
 # Keep package metadata limited to the currently public destinations.
 Homepage = "https://insight-ui-webmcp.alpininsight.ai/"
 Documentation = "https://insight-ui-webmcp.alpininsight.ai/"
+Source = "https://github.com/alpininsight/insight-ui-webmcp"
+Issues = "https://github.com/alpininsight/insight-ui-webmcp/issues"
 
 [tool.hatch.version]
 source = "vcs"
