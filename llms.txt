@@ -1,0 +1,46 @@
+# Insight UI WebMCP
+
+> A Django adapter by Alpin Insight Solutions that exposes public content, navigation and reviewed actions of Insight UI sites as WebMCP tools. The PyPI package is `insight-ui-webmcp`; it depends on the `ais-webmcp` core rather than shipping its own browser runtime.
+
+This repository is the Django package only. Install it with `uv add insight-ui-webmcp` or `pip install insight-ui-webmcp` (Python 3.12 or later, Django 6.0.4–6.x). Add `insight_ui_webmcp` to `INSTALLED_APPS`, then load `{% webmcp_assets %}` from the `webmcp_tags` library once in the site shell. Optional Insight UI integration is the `ui` extra (`insight-ui-webmcp[ui]`).
+
+Management commands include `webmcp_prepare`, `webmcp_validate`, `webmcp_init`, `webmcp_doctor`, `webmcp_status`, `webmcp_diff`, and `webmcp_export`. Hosts keep control of content, permissions and execution. Consequential tools stay disabled until the host explicitly enables and implements them. `subscribe_newsletter` is written `enabled: false` and this package does not register a submit handler.
+
+The shared manifest schema and `register.js` browser runtime come from the installed `ais-webmcp` core (`ais-webmcp>=0.1.0,<0.3`). This adapter is not the place to install the npm package `@alpininsightsolutions/webmcp`; Django sites use the Core from PyPI. The unscoped npm package `webmcp` is unrelated.
+
+Documentation: <https://insight-ui-webmcp.alpininsight.ai/>
+Company website: <https://alpininsight.com>
+License: Apache-2.0. WebMCP is a draft of the W3C Web Machine Learning Community Group, not a W3C Standard. This package itself stays Apache-2.0; the optional `ui` extra pulls in Insight UI, which is licensed under AGPL-3.0.
+
+## Documentation
+
+- [Insight UI WebMCP documentation](https://insight-ui-webmcp.alpininsight.ai/): documentation site for this adapter and the ais-webmcp core
+- [Newcomer guide](https://insight-ui-webmcp.alpininsight.ai/docs/guide/): which package to use
+- [Package comparison](https://insight-ui-webmcp.alpininsight.ai/docs/guide/packages/): ais-webmcp, the npm runtime, and this Django adapter
+- [Agents and edge](https://insight-ui-webmcp.alpininsight.ai/docs/guide/agents-and-edge/): how origin registration relates to optional edge integration
+- [insight-ui-webmcp guide](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/): Django adapter overview
+- [Installation](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/installation/): install the adapter and enable it in a Django project
+- [Settings](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/settings/): `WEBMCP_ENABLED`, origin-trial, asset mode, and profiles
+- [Management commands](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/commands/): `webmcp_prepare`, `webmcp_validate`, and the other `webmcp_*` commands
+- [Templates](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/templates/): `{% webmcp_assets %}`, `{% webmcp_attribution %}`, and related tags
+- [Profiles](https://insight-ui-webmcp.alpininsight.ai/docs/insight-ui-webmcp/profiles/): host profiles such as the shipped `webpage` profile
+- [README](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/README.md): setup, settings, output schemas, and declarative forms
+
+## Package source
+
+- [insight-ui-webmcp on PyPI](https://pypi.org/project/insight-ui-webmcp/): install with `pip install insight-ui-webmcp` or `uv add insight-ui-webmcp`
+- [Adapter source](https://github.com/alpininsight/insight-ui-webmcp/tree/develop/src/insight_ui_webmcp): Django app, profiles, and helpers
+- [Template tags](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/src/insight_ui_webmcp/templatetags/webmcp_tags.py): `webmcp_assets`, `webmcp_attribution`, and the experimental declarative form helper
+- [Management commands](https://github.com/alpininsight/insight-ui-webmcp/tree/develop/src/insight_ui_webmcp/management/commands): `webmcp_prepare`, `webmcp_validate`, `webmcp_init`, `webmcp_doctor`, `webmcp_status`, `webmcp_diff`, and `webmcp_export`
+- [webpage profile](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/src/insight_ui_webmcp/profiles/webpage.py): shipped read-only tools such as `list_sections` and `get_section`
+- [Declarative forms notes](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/docs/declarative-api.md): experimental helper for the still-non-normative declarative API
+- [pyproject.toml](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/pyproject.toml): package metadata and the `ais-webmcp` dependency
+
+## Optional
+
+- [Company website](https://alpininsight.com): Alpin Insight Solutions
+- [ais-webmcp core](https://github.com/alpininsight/ais-webmcp): framework-independent CLI, schemas, and browser runtime this adapter depends on
+- [ais-webmcp on PyPI](https://pypi.org/project/ais-webmcp/)
+- [WebMCP draft specification](https://webmachinelearning.github.io/webmcp/)
+- [CHANGELOG](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/CHANGELOG.md)
+- [LICENSE](https://github.com/alpininsight/insight-ui-webmcp/blob/develop/LICENSE): Apache-2.0
