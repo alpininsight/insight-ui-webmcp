@@ -3,12 +3,10 @@
 ## Public contributor checks
 
 `ci.yml` delegates repository policy and Python quality to the public
-`alpininsight/.github` catalog introduced by its PR #52. Each reusable and its
-runtime scripts are bound to the reviewed catalog revision
-`7152544c2f591ed277e17894db9ad11f551b3069`; script digests match that revision.
-The public catalog runbook requires immutable caller pins, replacing the earlier
-proposal to use a moving `main` reference. No private reusable, repository secret
-or self-hosted runner is needed for contributor CI.
+`alpininsight/.github` catalog. Each reusable is pinned to a reviewed catalog
+commit. Runtime script digests match the corresponding workflow revision. No
+private reusable, repository secret or self-hosted runner is needed for
+contributor CI.
 
 The required checks remain **WebMCP Quality Gate** and
 **repository-policy / Repository Policy**. Full CI covers Python 3.12/3.13/3.14,
@@ -19,13 +17,21 @@ Insight UI 1.15.1 and the published 2.0.0rc1, with the RC also using
 The public quality reusable owns these common steps; this repository owns its
 package-specific commands and evidence contract.
 
+Open pull requests against `develop`. Contributors can push their changes to
+a feature branch in a public fork and open the pull request from that branch.
+If GitHub queues a first-time contributor's workflow for approval, a maintainer
+reviews the diff before starting CI.
+
 PR opening, new commits, reopening and base retargeting run full CI. Main pushes
 also run full CI. Develop pushes do not duplicate the tested PR matrix.
-Title/body edits and Ready events use a separate concurrency group and revalidate
-the latest full producer for the same repository, PR, head, base and attempt.
-They never infer success from skipped tests or recursively reuse metadata runs.
-The verifier is loaded from the trusted PR base. A newer failed/cancelled run,
-missing contract, API error, changed source identity or timeout fails closed.
+On same-repository PRs, title/body edits and Ready events use a separate
+concurrency group. The verifier runs from the trusted PR base and revalidates
+the latest full run for the same repository, PR, head, base and attempt.
+It requires successful tests from that run and fails if the run failed, is
+missing required checks, has a different source, or cannot be verified.
+
+Fork PRs run full CI on these events as well because GitHub may omit the fork PR
+association from the run inventory.
 Policy and code checks are independent; both are required for merge.
 
 ## Source release

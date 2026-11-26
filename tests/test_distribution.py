@@ -25,13 +25,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def assert_public_package_links(message):
     entries = message.get_all("Project-URL", [])
-    assert len(entries) == 2
+    assert len(entries) == 4
     assert dict(entry.split(", ", 1) for entry in entries) == {
         "Homepage": "https://insight-ui-webmcp.alpininsight.ai/",
         "Documentation": "https://insight-ui-webmcp.alpininsight.ai/",
+        "Source": "https://github.com/alpininsight/insight-ui-webmcp",
+        "Issues": "https://github.com/alpininsight/insight-ui-webmcp/issues",
     }
     readme = message.get_payload()
-    # PyPI renders this payload without the private repository's relative paths.
+    # PyPI renders this payload outside the repository.
     for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", readme):
         if link.startswith("#"):
             continue
@@ -39,10 +41,10 @@ def assert_public_package_links(message):
         assert target.scheme == "https" and target.netloc
     for link in re.findall(r"https?://[^\s)>\]]+", readme):
         target = urlsplit(link)
-        assert not (
-            target.hostname == "github.com"
-            and target.path.split("/")[1:3] == ["alpininsight", "insight-ui-webmcp"]
-        )
+        parts = target.path.split("/")[1:3]
+        if target.hostname == "github.com" and len(parts) == 2 and parts[0] == "alpininsight":
+            assert parts[1] != ".github-private"
+            assert not parts[1].startswith("insight-ui-webmcp-")
 
 
 def assert_optional_ui_metadata(message):

@@ -1,5 +1,5 @@
 name: CI
-run-name: ${{ github.event_name == 'pull_request' && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'CI metadata' || 'CI full' }}
+run-name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'CI metadata' || 'CI full' }}
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, edited]
@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: webmcp-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'metadata' || 'full' }}
+  group: webmcp-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.changes.base && (github.event.action == 'edited' || github.event.action == 'ready_for_review') && 'metadata' || 'full' }}
   cancel-in-progress: true
 jobs:
   classify:
@@ -24,9 +24,10 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           ACTION: ${{ github.event.action }}
           BASE_CHANGED: ${{ github.event.changes.base != null }}
+          SAME_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           mode=full
-          if [ "$EVENT_NAME" = pull_request ] && [ "$BASE_CHANGED" = false ]; then
+          if [ "$EVENT_NAME" = pull_request ] && [ "$SAME_REPOSITORY" = true ] && [ "$BASE_CHANGED" = false ]; then
             case "$ACTION" in
               edited|ready_for_review) mode=metadata ;;
             esac
@@ -38,12 +39,13 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: alpininsight/.github/.github/workflows/repository-policy.yml@7152544c2f591ed277e17894db9ad11f551b3069 # public catalog
+    uses: alpininsight/.github/.github/workflows/repository-policy.yml@86d0d1798b1aa0c6ced5362470ad14eb0301aae9 # public catalog
     with:
       main_branch: main
       develop_branch: develop
-      policy_revision: 7152544c2f591ed277e17894db9ad11f551b3069
-      policy_sha256: e172ee9657581c2e47b3940f291d7aa00769bcb59cca8db8d75b168f49835d09
+      allow_develop_fork_prs: true
+      policy_revision: 86d0d1798b1aa0c6ced5362470ad14eb0301aae9
+      policy_sha256: fddb3374432d7f8c9b040d6d7410fa906c92a536729b7edb7f30873f395112cb
 
   quality:
     needs: classify
