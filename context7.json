@@ -1,0 +1,35 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Insight UI WebMCP",
+  "description": "A Django adapter that brings WebMCP to Insight UI sites, exposing public content, navigation and reviewed actions as explicit tools while the application keeps control of content, permissions and execution.",
+  "folders": [
+    "docs",
+    "src"
+  ],
+  "excludeFolders": [
+    "tests",
+    "scripts",
+    "archive",
+    "archived",
+    "old",
+    "docs/old",
+    "deprecated",
+    "legacy",
+    "previous",
+    "outdated",
+    "superseded",
+    "_snaps",
+    "benchmark",
+    "benchmarks",
+    "benches",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage"
+  ],
+  "rules": [
+    "Add insight_ui_webmcp to INSTALLED_APPS and load the webmcp_assets template tag once in the site shell.",
+    "Prepare and validate the host manifest with the webmcp_prepare and webmcp_validate management commands before enabling WebMCP on a site.",
+    "Use explicit host profiles to bind the shared manifest to the site's own content and handlers; this adapter uses the installed ais-webmcp core instead of shipping its own register.js."
+  ]
+}
