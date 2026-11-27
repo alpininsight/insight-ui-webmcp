@@ -539,12 +539,15 @@ def test_docs_name_the_proposal_and_the_radio_gap() -> None:
     root = Path(__file__).resolve().parents[1]
     readme = (root / "README.md").read_text(encoding="utf-8")
     design = (root / "docs" / "declarative-api.md").read_text(encoding="utf-8")
-    for text in (readme, design):
-        assert "toolname" in text
-        assert "tooldescription" in text
-        assert "toolautosubmit" in text
-        assert "toolparamdescription" in text
-        assert "document.modelContext.registerTool" in text
-        assert "outputSchema" in text
-        assert "webmachinelearning/webmcp/issues/362" in text or "webmcp#362" in text
-        assert "declarative-api-explainer.md" in text
+    guide_url = (
+        "https://github.com/alpininsight/insight-ui-webmcp/blob/develop/docs/declarative-api.md"
+    )
+    assert f"]({guide_url})" in readme
+    assert "toolname" in design
+    assert "tooldescription" in design
+    assert "toolautosubmit" in design
+    assert "toolparamdescription" in design
+    assert "document.modelContext.registerTool" in design
+    assert "outputSchema" in design
+    assert "https://github.com/webmachinelearning/webmcp/issues/362" in design
+    assert "declarative-api-explainer.md" in design
